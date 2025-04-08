@@ -3,28 +3,29 @@ import os
 import subprocess
 import signal
 import sys
-import textwrap # <--- Added import
+import textwrap # Keep this import
 
 # Function to create Hostapd configuration files
+# --- THIS VERSION CREATES OPEN (UNENCRYPTED) NETWORKS FOR TESTING ---
 def create_hostapd_config(ssid, iface, filename):
-    # Use textwrap.dedent to remove leading whitespace common to all lines
+    # --- TEMPORARY TEST ---
+    print(f"!!! CREATING TEST OPEN CONFIG for {iface} !!!")
     config = textwrap.dedent(f"""\
         interface={iface}
-        ssid={ssid}
+        ssid={ssid}_OPEN_TEST
         hw_mode=g
         channel=1
-        macaddr_acl=0
-        auth_algs=1
-        ignore_broadcast_ssid=0
-        wpa=2
-        wpa_passphrase=yourpassword
-        wpa_key_mgmt=WPA-PSK
-        wpa_pairwise=TKIP
-        rsn_pairwise=CCMP
-    """) # Note the backslash after the opening triple quotes helps dedent
+        # WPA stuff commented out for testing
+        #wpa=2
+        #wpa_passphrase=yourpassword
+        #wpa_key_mgmt=WPA-PSK
+        #wpa_pairwise=TKIP # TKIP is weak, avoid if possible
+        #rsn_pairwise=CCMP
+    """)
+    # --- END TEMPORARY TEST ---
     with open(filename, 'w') as file:
-        # Write the correctly formatted config
         file.write(config)
+# --- END OF MODIFIED FUNCTION ---
 
 # Function to start Hostapd
 def start_hostapd(config_file):
@@ -98,32 +99,29 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        # Create Hostapd configuration files
+        # Create Hostapd configuration files (using the modified function)
         print("Creating hostapd config files...")
         create_hostapd_config(args.legit_ssid, args.interface_legit, config_files[0])
         create_hostapd_config(args.fake_ssid, args.interface_fake, config_files[1])
         print("Config files created.")
 
         # Start Hostapd for both SSIDs
-        # Adding processes in order: legit AP, fake AP, tcpdump
         processes.append(start_hostapd(config_files[0]))
-        # Optional: Add a small delay to allow the first hostapd to start
-        # import time
-        # time.sleep(2)
         processes.append(start_hostapd(config_files[1]))
-        # Optional: Add a small delay to allow the second hostapd to start and bring up interface
-        # time.sleep(5) # Increased delay before starting tcpdump
 
         # Start tcpdump on the fake interface
+        # Give hostapd a moment to potentially bring up the interface
+        import time
+        time.sleep(3) # Add a small delay before starting tcpdump
         processes.append(start_tcpdump(args.interface_fake, 'tcpdump_output.pcap'))
 
         # Keep the script running
         print("\nSetup complete. Hostapd and tcpdump should be running.")
-        print(f"Broadcasting '{args.legit_ssid}' on {args.interface_legit}")
-        print(f"Broadcasting '{args.fake_ssid}' on {args.interface_fake}")
+        print(f"Broadcasting '{args.legit_ssid}_OPEN_TEST' on {args.interface_legit}") # Updated SSID
+        print(f"Broadcasting '{args.fake_ssid}_OPEN_TEST' on {args.interface_fake}")   # Updated SSID
         print(f"Capturing traffic on {args.interface_fake} to tcpdump_output.pcap")
         print("\nPress Ctrl+C to stop the script and clean up.")
-        
+
         # Wait indefinitely for a signal
         signal.pause()
 
