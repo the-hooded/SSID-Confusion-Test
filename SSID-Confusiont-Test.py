@@ -1,3 +1,4 @@
+
 import argparse
 import os
 import subprocess
@@ -5,27 +6,22 @@ import signal
 import sys
 import textwrap # Keep this import
 
-# Function to create Hostapd configuration files
-# --- THIS VERSION CREATES OPEN (UNENCRYPTED) NETWORKS FOR TESTING ---
+# Function to create Hostapd configuration files WITH WPA2 PASSWORD (hardcoded default)
 def create_hostapd_config(ssid, iface, filename):
-    # --- TEMPORARY TEST ---
-    print(f"!!! CREATING TEST OPEN CONFIG for {iface} !!!")
+    password = "1234567890"  # Hardcoded default password
     config = textwrap.dedent(f"""\
         interface={iface}
-        ssid={ssid}_OPEN_TEST
+        ssid={ssid}
         hw_mode=g
         channel=1
-        # WPA stuff commented out for testing
-        #wpa=2
-        #wpa_passphrase=yourpassword
-        #wpa_key_mgmt=WPA-PSK
-        #wpa_pairwise=TKIP # TKIP is weak, avoid if possible
-        #rsn_pairwise=CCMP
+        wpa=2
+        wpa_passphrase={password}
+        wpa_key_mgmt=WPA-PSK
+        wpa_pairwise=TKIP # TKIP is weak, avoid if possible
+        rsn_pairwise=CCMP
     """)
-    # --- END TEMPORARY TEST ---
     with open(filename, 'w') as file:
         file.write(config)
-# --- END OF MODIFIED FUNCTION ---
 
 # Function to start Hostapd
 def start_hostapd(config_file):
@@ -99,11 +95,11 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        # Create Hostapd configuration files (using the modified function)
-        print("Creating hostapd config files...")
+        # Create Hostapd configuration files with WPA2 and the hardcoded password
+        print("Creating hostapd config files with WPA2 (hardcoded password)...")
         create_hostapd_config(args.legit_ssid, args.interface_legit, config_files[0])
         create_hostapd_config(args.fake_ssid, args.interface_fake, config_files[1])
-        print("Config files created.")
+        print("Config files created with WPA2 (hardcoded password).")
 
         # Start Hostapd for both SSIDs
         processes.append(start_hostapd(config_files[0]))
@@ -117,8 +113,8 @@ def main():
 
         # Keep the script running
         print("\nSetup complete. Hostapd and tcpdump should be running.")
-        print(f"Broadcasting '{args.legit_ssid}_OPEN_TEST' on {args.interface_legit}") # Updated SSID
-        print(f"Broadcasting '{args.fake_ssid}_OPEN_TEST' on {args.interface_fake}")   # Updated SSID
+        print(f"Broadcasting '{args.legit_ssid}' (WPA2) on {args.interface_legit} with password '1234567890'")
+        print(f"Broadcasting '{args.fake_ssid}' (WPA2) on {args.interface_fake} with password '1234567890'")
         print(f"Capturing traffic on {args.interface_fake} to tcpdump_output.pcap")
         print("\nPress Ctrl+C to stop the script and clean up.")
 
