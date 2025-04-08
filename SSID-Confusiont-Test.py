@@ -4,10 +4,8 @@ import os
 import subprocess
 import signal
 import sys
-import textwrap # Keep this import
+import textwrap 
 
-# Function to create Hostapd configuration files WITH WPA2 PASSWORD (hardcoded default)
-def create_hostapd_config(ssid, iface, filename):
     password = "1234567890"  # Hardcoded default password
     config = textwrap.dedent(f"""\
         interface={iface}
